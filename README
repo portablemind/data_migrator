@@ -1,13 +1,42 @@
-DataMigrator
-============
+Data Migrations
+===============
 
-Introduction goes here.
+Every Rails developer is familiar with Rails’ invaluable schema migration tool but, as I’m sure many have experienced, it does not address the need for data migrations. Mixing data migrations into schema migrations is simply unacceptable. There is of course the seed data tool, but this is intended for the loading of initial data, much like fixtures. We needed a way to deal with ongoing data migrations to support schema changes over time. This called for a tool similar to schema migrations to be used exclusively for data migrations. The behavior is almost identical to schema migrations.  They are controlled via a versioning mechanism like schema migrations.  They can be run up and down and they load your Rails environment so all your models are fair game.  Anything you can do with your models you can do in the migrations i.e. create, update destroy/delete.
+It's easy to get started just install the plugin and your ready to go.  There is a generator just like with schema migrations:
 
+script/generate data_migration create_sample_users
 
-Example
-=======
+It will generate the versioning for you and place the file in db/data_migrations (don't worry if the folder isn't there it will create it for you).  Simply add your code to the generated file
 
-Example goes here.
+class CreateSampleUsers
+  def self.up
+	User.create(:login => 'awesome_dude' , :email => 'awesome@dude.com')
+  end
+  def self.down
+	User.destroy_all(:conditions => ['login = ?','awesome_dude'])
+  end
+end
+You can even use the Migration class if you wish:
+class CreateSampleUsers < ActiveRecord::Migration
+  def self.up
+    execute "UPDATE users SET name=’Fred' WHERE id=2" 
+  end
+end
 
+As you can see it has an up and a down just like schema migrations.  To run the data migrations simply run the rake task
+rake db:migrate_data
 
-Copyright (c) 2010 [name of plugin creator], released under the MIT license
+All the schema migration features work here too
+Migrate up to and including specified version, running all migrations that have not been run:
+rake db:migrate VERSION=10101010101
+Migrate only the specified migration if it has not been run:
+rake db:migrate_data:up VERSION=1010101010101
+Migrate down only the specified version if it has not been run:
+rake db:migrate_data:down VERSION=10101010101
+
+One added benefit that data migrations have over regular schema migrations is that if you like to develop in engines as I do, it will pick up and run any of the data migrations living in your engines as well.  Just create a folder in your engine db/data_migrations and you’re all set.  When you run the rake task it will copy any files located in db/data_migrations of your engines up to RAILS_ROOT/db/data_migrations and run them.  When it is done it will remove them from RAILS_ROOT /db/data_migrations leaving them down in your engines.  Yet another cool feature (I know this is starting to sound like an infomercial), if you don't want to run some of your migrations, say you have some test data that you want only ran from your environment you can place them in folder called db/data_migrations/ignore and as the folder suggests the rake task will ignore anything and everything in that folder.  So when you commit your changes, your colleagues won't groan when your migrations won't run in their environment.  It will also recursively go through folders looking for migrations so you can organize them if you like
+
+db/data_migrations/users/010101010101_example_users.rb
+db/data_migrations/roles/010101010101_example_roles.rb
+
+That about wraps it up. Have at it my fellow developers and as always happy coding.
