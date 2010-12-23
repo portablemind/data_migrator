@@ -1,0 +1,6 @@
+###########################################
+##### Data Migration Generator    #########
+###########################################
+
+Used to generate migration to insert data into database
+To run the migration db:migrate_data
