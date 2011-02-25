@@ -25,8 +25,6 @@ class DataMigrator
   end
   
   def self.pending_migrations
-    current_version = self.get_current_version
-    puts current_version
     versions = []
     files = self.get_all_files
     files.each do |file|
