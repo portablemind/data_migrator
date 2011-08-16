@@ -10,7 +10,7 @@ namespace :db do
   end#end task
     
   namespace :migrate_data do
-    task :list_pending => :environment do
+	task :list_pending => :environment do
       DataMigrator.prepare_migrations
       pending_migrations = DataMigrator.pending_migrations
       puts "================Pending Data Migrations=========="

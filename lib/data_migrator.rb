@@ -1,18 +1,13 @@
 require "benchmark"
 
 class DataMigrator
-  DEFAULT_MIGRATIONS_PATH = "#{RAILS_ROOT}/db/data_migrations"
+  DEFAULT_MIGRATIONS_PATH = "#{Rails.root}/db/data_migrations"
   REMOVE_FILES_REGEX = /^\./
   
   def self.migrate(passed_location=nil, passed_version=nil)
     self.setup
    
-    if passed_location.nil?
-      @location = DEFAULT_MIGRATIONS_PATH 
-    else
-      @location = passed_location 
-    end
-  
+    location = passed_location.nil? ? DEFAULT_MIGRATIONS_PATH  : passed_location
     @@current_version = get_current_version
 
     if passed_version.nil? || @@current_version.nil?
@@ -60,7 +55,7 @@ class DataMigrator
       if passed_version == version
         found = true
         unless self.version_has_been_migrated?(version)
-          self.handle_up_action(file, klass_name, version)
+          self.handle_action(file, klass_name, version, :up)
         else
           puts "** Version #{passed_version} has already been migrated"
         end
@@ -86,7 +81,7 @@ class DataMigrator
       if passed_version == version
         found = true
         if self.version_has_been_migrated?(version)
-          self.handle_down_action(file, klass_name, version)
+          self.handle_action(file, klass_name, version, :down)
         else
           puts "** Version #{passed_version} has not been migrated"
         end
@@ -100,7 +95,7 @@ class DataMigrator
   end
   
   def self.prepare_migrations
-    target = "#{RAILS_ROOT}/db/data_migrations/"
+    target = "#{Rails.root}/db/data_migrations/"
 
     # first copy all app data_migrations away
     files = Dir["#{target}*.rb"]
@@ -111,7 +106,7 @@ class DataMigrator
       puts "copied #{files.size} data_migrations to db/data_migrations/ignore/app"
     end
 
-    dirs = Rails.plugins.values.map(&:directory)
+    dirs = Rails::Application::Railties.engines.map{|p| p.config.root.to_s}
     files = Dir["{#{dirs.join(',')}}/db/data_migrations/*.rb"]
 
     unless files.empty?
@@ -122,7 +117,7 @@ class DataMigrator
   end
   
   def self.cleanup_migrations
-    target = "#{RAILS_ROOT}/db/data_migrations/"
+    target = "#{Rails.root}/db/data_migrations/"
       
 	  files = Dir["#{target}*.rb"]
     unless files.empty?
@@ -158,7 +153,7 @@ class DataMigrator
       filename, version, klass_name = self.seperate_file_parts(file)
       if version <= passed_version
         unless self.version_has_been_migrated?(version)
-          self.handle_up_action(file, klass_name, version)
+          self.handle_action(file, klass_name, version, :up)
         end
       end
     end
@@ -172,7 +167,7 @@ class DataMigrator
       filename, version, klass_name = self.seperate_file_parts(file)
       if passed_version.nil? or version <= passed_version
         if !self.version_has_been_migrated?(version) 
-          self.handle_up_action(file, klass_name, version)
+          self.handle_action(file, klass_name, version, :up)
         end
       end
     end
@@ -185,21 +180,21 @@ class DataMigrator
       filename, version, klass_name = self.seperate_file_parts(file)
       if version > passed_version
         if self.version_has_been_migrated?(version)
-          self.handle_down_action(file, klass_name, version)
+          self.handle_action(file, klass_name, version, :down)
         end
       end
     end
 
   end
 
-  def self.handle_up_action(file, klass_name, version)
+  def self.handle_action(file, klass_name, version, action)
     require file
     klass = klass_name.camelize.constantize
-    puts "=================Migrating #{klass.to_s} UP============"
+    puts "=================Migrating #{klass.to_s} #{action.to_s.upcase}============"
     begin
       time = Benchmark.measure do
         ActiveRecord::Base.transaction do
-          klass.up
+          klass.send(action.to_s)
         end
       end
     rescue Exception=>ex
@@ -209,25 +204,6 @@ class DataMigrator
     time_str = "(%.4fs)" % time.real
     puts "================Finished #{klass.to_s} in #{time_str}=="
     self.insert_migration_version(version)
-  end
-
-  def self.handle_down_action(file, klass_name, version)
-    require file
-    klass = klass_name.camelize.constantize
-    puts "================Migrating #{klass.to_s} DOWN=========="
-    begin
-      time = Benchmark.measure do
-        ActiveRecord::Base.transaction do
-          klass.down
-        end
-      end
-    rescue Exception=>ex
-      self.cleanup_migrations
-      raise ex
-    end
-    time_str = "(%.4fs)" % time.real
-    puts "================Finished #{klass.to_s} in #{time_str}=="
-    self.remove_migration_version(version)
   end
   
   def self.insert_migration_version(version)
@@ -254,13 +230,12 @@ class DataMigrator
 
   def self.data_migrations_table_exists?
     table_names =  ActiveRecord::Base.connection.tables
-
     table_names.include?('data_migrations')
   end
 
   def self.create_data_migrations_table
     puts "** data_migrations table missing creating now...."
-    ActiveRecord::Migrator.migrate("#{File.dirname(__FILE__)}/../../db/migrate/")
+    puts ActiveRecord::Migrator.run(:up, File.join(File.dirname(__FILE__),'../db/migrate/'), 20100819181805)
     puts "** done"
   end
 
