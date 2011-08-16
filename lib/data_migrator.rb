@@ -42,6 +42,10 @@ class DataMigrator
     current_version
   end
   
+  def self.next_migration_number
+	Time.now.utc.strftime("%Y%m%d%H%M%S")
+  end
+  
   def self.run_up(passed_version)
     self.setup
     

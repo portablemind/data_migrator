@@ -1,6 +1,9 @@
-###########################################
-##### Data Migration Generator    #########
-###########################################
+Description:
+    Used to generate migration to insert data into database
+	To run the migration db:migrate_data
 
-Used to generate migration to insert data into database
-To run the migration db:migrate_data
+Example:
+    rails g data_migration my_new_migration
+
+    This will create:
+        db/data_migrations/[timestamp]_my_new_migration.rb
