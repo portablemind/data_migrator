@@ -1,5 +1,11 @@
 require "benchmark"
 
+class DataMigrationTask < Rails::Railtie
+  rake_tasks do
+    Dir[File.join(File.dirname(__FILE__),'tasks/*.rake')].each { |f| load f }
+  end
+end
+
 class DataMigrator
   DEFAULT_MIGRATIONS_PATH = "#{Rails.root}/db/data_migrations"
   REMOVE_FILES_REGEX = /^\./
