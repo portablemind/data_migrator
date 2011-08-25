@@ -1,7 +1,6 @@
 # -*- encoding: utf-8 -*-
 lib = File.expand_path('../lib/', __FILE__)
 $:.unshift lib unless $:.include?(lib)
-require 'version'
 
 Gem::Specification.new do |s|
   s.authors = ["Russell Holmes, Adam Hull"]
@@ -12,6 +11,6 @@ Gem::Specification.new do |s|
   s.description = "Allows you to create data migrations that can be run up and down to insert data into the database."
   s.files = Dir["{db,lib,tasks}/**/*"] + ["MIT-LICENSE", "README.rdoc"]
   s.test_files = Dir["test/**/*"]
-  s.version = ::DataMigrator::VERSION
+  s.version = '1.4'
   s.add_runtime_dependency 'activerecord', '>= 2.3.5'
 end

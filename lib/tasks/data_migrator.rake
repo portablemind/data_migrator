@@ -1,53 +1,53 @@
 namespace :db do
   desc 'migrates data into database'
   task :migrate_data => :environment do
-      
     passed_version = ENV["VERSION"] ? ENV["VERSION"].to_i : nil
-    DataMigrator.prepare_migrations
-    DataMigrator.migrate(nil, passed_version)
-	  DataMigrator.cleanup_migrations
+    data_migrator = RussellEdge::DataMigrator.new
+    data_migrator.prepare_migrations
+    data_migrator.migrate(nil, passed_version)
+	  data_migrator.cleanup_migrations
       
-  end#end task
+  end#end migrate_data task
     
   namespace :migrate_data do
 	task :list_pending => :environment do
-      DataMigrator.prepare_migrations
-      pending_migrations = DataMigrator.pending_migrations
+      data_migrator = RussellEdge::DataMigrator.new
+      data_migrator.prepare_migrations
+      pending_migrations = data_migrator.pending_migrations
       puts "================Pending Data Migrations=========="
       puts pending_migrations
       puts "================================================="
-      DataMigrator.cleanup_migrations
-    end
+      data_migrator.cleanup_migrations
+    end#end list_pending task
 
     task :version => :environment do
-      version = DataMigrator.get_current_version
+      data_migrator = RussellEdge::DataMigrator.new
+      version = data_migrator.get_current_version
 
-      unless version.nil?
-        puts "** Current version #{version}"
-      else
-        puts "** No migrations ran"
-      end
-    end
+      puts (version.nil?) ? "** No migrations ran" : "** Current version #{version}"
+    end#end version task
       
     task :up => :environment do
       passed_version = ENV["VERSION"] ? ENV["VERSION"].to_i : nil
       raise "VERSION is required" unless passed_version
+      
+      data_migrator = RussellEdge::DataMigrator.new  
+      data_migrator.prepare_migrations
+      data_migrator.run_up(passed_version)
+      data_migrator.cleanup_migrations
         
-      DataMigrator.prepare_migrations
-      DataMigrator.run_up(passed_version)
-      DataMigrator.cleanup_migrations
-        
-    end#end task
+    end#end up task
       
     task :down => :environment do
       passed_version = ENV["VERSION"] ? ENV["VERSION"].to_i : nil
       raise "VERSION is required" unless passed_version
-		
-      DataMigrator.prepare_migrations
-      DataMigrator.run_down(passed_version)
-      DataMigrator.cleanup_migrations
+		  
+		  data_migrator = RussellEdge::DataMigrator.new 
+      data_migrator.prepare_migrations
+      data_migrator.run_down(passed_version)
+      data_migrator.cleanup_migrations
         
-    end#end task
+    end#end down task
   end#end namespace
 end
 
