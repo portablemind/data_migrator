@@ -10,6 +10,12 @@ module RussellEdge
   class DataMigrator
     REMOVE_FILES_REGEX = /^\./
     
+    #class methods
+    def self.next_migration_number
+  	  Time.now.utc.strftime("%Y%m%d%H%M%S")
+    end
+    #end
+    
     def initialize(migrations_path=nil)
       @default_migrations_path = migrations_path || "#{Rails.root}/db/data_migrations"
     end
@@ -48,10 +54,6 @@ module RussellEdge
       current_version = current_version.to_i unless current_version.nil?
 
       current_version
-    end
-  
-    def next_migration_number
-  	Time.now.utc.strftime("%Y%m%d%H%M%S")
     end
   
     def run_up(passed_version)
