@@ -11,6 +11,6 @@ Gem::Specification.new do |s|
   s.description = "Allows you to create data migrations that can be run up and down to insert data into the database."
   s.files = Dir["{db,lib,tasks}/**/*"] + ["MIT-LICENSE", "README.rdoc"]
   s.test_files = Dir["test/**/*"]
-  s.version = '1.5'
+  s.version = '1.6'
   s.add_runtime_dependency 'activerecord', '>= 2.3.5'
 end
