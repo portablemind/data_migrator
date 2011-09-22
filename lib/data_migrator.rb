@@ -88,7 +88,7 @@ module RussellEdge
         filename, version, klass_name = seperate_file_parts(file)
         if passed_version == version
           found = true
-          (version_has_been_migrated?(version)) ? (puts "** Version #{passed_version} has not been migrated") : handle_action(file, klass_name, version, :down)
+          (version_has_been_migrated?(version)) ? handle_action(file, klass_name, version, :down) : (puts "** Version #{passed_version} has not been migrated")
         end
       end
     
@@ -201,7 +201,8 @@ module RussellEdge
       end
       time_str = "(%.4fs)" % time.real
       puts "================Finished #{klass.to_s} in #{time_str}=="
-      insert_migration_version(version)
+      
+      (action == :up) ? insert_migration_version(version) : remove_migration_version(version)
     end
   
     def insert_migration_version(version)
@@ -218,11 +219,8 @@ module RussellEdge
       db_result = ActiveRecord::Base.connection.select_all("select count(*) as num_rows from data_migrations where version = '#{version}'")
 
       num_rows = db_result[0]['num_rows'] unless db_result == -1
-
-      if num_rows.nil? || num_rows.to_i == 0
-        result = false
-      end
-
+    
+      result = false if (num_rows.nil? || num_rows.to_i == 0)
       result
     end
 
