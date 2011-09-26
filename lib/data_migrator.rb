@@ -10,11 +10,55 @@ module RussellEdge
   class DataMigrator
     REMOVE_FILES_REGEX = /^\./
     
-    #class methods
-    def self.next_migration_number
-  	  Time.now.utc.strftime("%Y%m%d%H%M%S")
+    class << self
+      def next_migration_number
+    	  Time.now.utc.strftime("%Y%m%d%H%M%S")
+      end
+    
+      def initialize_data_migrations_table
+        puts "** data_migrations table missing creating now...."
+        puts ActiveRecord::Migrator.run(:up, File.join(File.dirname(__FILE__),'../db/migrate/'), 20100819181805)
+        puts "** done"
+      end
+      
+      def prepare_migrations
+        target = "#{Rails.root}/db/data_migrations/"
+
+        # first copy all app data_migrations away
+        files = Dir["#{target}*.rb"]
+
+        unless files.empty?
+          FileUtils.mkdir_p "#{target}/ignore/app/"
+          FileUtils.cp files, "#{target}/ignore/app/"
+          puts "copied #{files.size} data_migrations to db/data_migrations/ignore/app"
+        end
+
+        dirs = Rails::Application::Railties.engines.map{|p| p.config.root.to_s}
+        files = Dir["{#{dirs.join(',')}}/db/data_migrations/*.rb"]
+
+        unless files.empty?
+          FileUtils.mkdir_p target
+          FileUtils.cp files, target
+          puts "copied #{files.size} migrations to db/data_migrations"
+        end
+      end
+
+      def cleanup_migrations
+        target = "#{Rails.root}/db/data_migrations/"
+
+    	  files = Dir["#{target}*.rb"]
+        unless files.empty?
+          FileUtils.rm files
+          puts "removed #{files.size} data_migrations from db/data_migrations"
+        end
+        files = Dir["#{target}/ignore/app/*.rb"]
+        unless files.empty?
+          FileUtils.cp files, target
+          puts "copied #{files.size} data_migrations back to db/data_migrations"
+        end
+        FileUtils.rm_rf "#{target}/ignore/app"
+      end
     end
-    #end
     
     def initialize(migrations_path=nil)
       @default_migrations_path = migrations_path || "#{Rails.root}/db/data_migrations"
@@ -95,49 +139,11 @@ module RussellEdge
       puts "** Version #{passed_version} not found" unless found
     
     end
-  
-    def prepare_migrations
-      target = "#{Rails.root}/db/data_migrations/"
-
-      # first copy all app data_migrations away
-      files = Dir["#{target}*.rb"]
-
-      unless files.empty?
-        FileUtils.mkdir_p "#{target}/ignore/app/"
-        FileUtils.cp files, "#{target}/ignore/app/"
-        puts "copied #{files.size} data_migrations to db/data_migrations/ignore/app"
-      end
-
-      dirs = Rails::Application::Railties.engines.map{|p| p.config.root.to_s}
-      files = Dir["{#{dirs.join(',')}}/db/data_migrations/*.rb"]
-
-      unless files.empty?
-        FileUtils.mkdir_p target
-        FileUtils.cp files, target
-        puts "copied #{files.size} migrations to db/data_migrations"
-      end
-    end
-  
-    def cleanup_migrations
-      target = "#{Rails.root}/db/data_migrations/"
-      
-  	  files = Dir["#{target}*.rb"]
-      unless files.empty?
-        FileUtils.rm files
-        puts "removed #{files.size} data_migrations from db/data_migrations"
-      end
-      files = Dir["#{target}/ignore/app/*.rb"]
-      unless files.empty?
-        FileUtils.cp files, target
-        puts "copied #{files.size} data_migrations back to db/data_migrations"
-      end
-      FileUtils.rm_rf "#{target}/ignore/app"
-    end
 	
     private
   
     def setup
-      create_data_migrations_table unless data_migrations_table_exists?
+      RussellEdge::DataMigrator.initialize_data_migrations_table unless data_migrations_table_exists?
       
       unless File.directory?  @default_migrations_path
         FileUtils.mkdir_p( @default_migrations_path)
@@ -196,7 +202,7 @@ module RussellEdge
           end
         end
       rescue Exception=>ex
-        cleanup_migrations
+        RussellEdge::DataMigrator.cleanup_migrations
         raise ex
       end
       time_str = "(%.4fs)" % time.real
@@ -227,12 +233,6 @@ module RussellEdge
     def data_migrations_table_exists?
       table_names =  ActiveRecord::Base.connection.tables
       table_names.include?('data_migrations')
-    end
-
-    def create_data_migrations_table
-      puts "** data_migrations table missing creating now...."
-      puts ActiveRecord::Migrator.run(:up, File.join(File.dirname(__FILE__),'../db/migrate/'), 20100819181805)
-      puts "** done"
     end
 
     def seperate_file_parts(file)
