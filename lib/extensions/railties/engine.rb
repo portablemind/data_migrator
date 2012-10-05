@@ -1,7 +1,7 @@
 Rails::Engine.class_eval do
   rake_tasks do
     next if self.is_a?(Rails::Application)
-    next unless has_migrations?
+    next unless has_data_migrations?
 
     namespace railtie_name do
       namespace :install do
