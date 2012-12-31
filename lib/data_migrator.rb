@@ -66,9 +66,9 @@ module RussellEdge
             source = "# This migration comes from #{scope} (originally #{migration[:version]})\n#{source}"
 
             if duplicate = destination_migrations.detect { |m| m[:name] == migration[:name] }
-              if options[:on_skip] && duplicate.scope != scope.to_s
-                options[:on_skip].call(scope, migration)
-              end
+              #if options[:on_skip] && duplicate.scope != scope.to_s
+              #  options[:on_skip].call(scope, migration)
+              #end
               next
             end
 
