@@ -23,7 +23,7 @@ module RussellEdge
         seen = Hash.new false
 
         migrations = files.map do |file|
-          version, name = file.scan(/([0-9]+)_([_a-z0-9]*)\.?([_a-z0-9]*)?.rb/).first
+          version, name, scope = file.scan(/([0-9]+)_([_a-z0-9]*)\.?([_a-z0-9]*)?.rb/).first
 
           raise ActiveRecord::IllegalMigrationNameError.new(file) unless version
           version = version.to_i
@@ -34,14 +34,14 @@ module RussellEdge
 
           seen[version] = seen[name] = true
 
-          {:name => File.basename(file), :filename => file, :version => version}
+          {:name => name, :filename => file, :version => version, :scope => scope}
         end
 
         migrations.sort{|h| h[:version]}
       end
 
-      def next_migration_number
-        Time.now.utc.strftime("%Y%m%d%H%M%S")
+      def next_migration_number(number)
+        [Time.now.utc.strftime("%Y%m%d%H%M%S"), "%.14d" % number].max
       end
 
       def initialize_data_migrations_table
@@ -58,20 +58,21 @@ module RussellEdge
         destination_migrations = migrations(destination)
         last = destination_migrations.last
         sources.each do |scope, path|
-          source_migrations = migrations(path)
-
-          source_migrations.each do |migration|
-
+          migrations(path).each do |migration|
             source = File.read(migration[:filename])
             source = "# This migration comes from #{scope} (originally #{migration[:version]})\n#{source}"
-            if duplicate = destination_migrations.detect { |m| m[:name].gsub(".#{scope}",'') == migration[:name] }
-              options[:on_skip].call(scope, migration) if options[:on_skip]
+            
+            if duplicate = destination_migrations.detect { |m| m[:name] == migration[:name] }
+              if options[:on_skip] && duplicate[:scope] != scope.to_s
+                options[:on_skip].call(scope, migration) 
+              end
               next
             end
-
-            migration[:version] = next_migration_number().to_i
-            new_path = File.join(destination, "#{File.basename(migration[:filename], '.*')}.#{scope}.rb")
+            
+            migration[:version] = next_migration_number(last ? last[:version] + 1 : 0).to_i
+            new_path = File.join(destination, "#{migration[:version]}_#{migration[:name].underscore}.#{scope}.rb")
             old_path, migration[:filename] = migration[:filename], new_path
+            last = migration
 
             File.open(migration[:filename], "w") { |f| f.write source }
             copied << migration
