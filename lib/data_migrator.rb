@@ -37,7 +37,7 @@ module RussellEdge
           {:name => name, :filename => file, :version => version, :scope => scope}
         end
 
-        migrations.sort{|h| h[:version]}
+        migrations.sort_by{|h| h[:version]}
       end
 
       def next_migration_number(number)
