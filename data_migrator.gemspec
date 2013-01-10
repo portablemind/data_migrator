@@ -1,9 +1,8 @@
 # -*- encoding: utf-8 -*-
-lib = File.expand_path('../lib/', __FILE__)
-$:.unshift lib unless $:.include?(lib)
+$:.push File.expand_path("../lib", __FILE__)
 
 # Maintain your gem's version:
-require "version"
+require "data_migrator/version"
 
 Gem::Specification.new do |s|
   s.authors = ["Russell Holmes, Adam Hull"]
