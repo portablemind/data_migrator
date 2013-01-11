@@ -41,7 +41,9 @@ namespace :railties do
     task :data_migrations => :environment do
       to_load = ENV['FROM'].blank? ? :all : ENV['FROM'].split(",").map {|n| n.strip }
       #added to allow developer to perserve timestamps
-      perserve_timestamp = ENV['PERSERVE_TIMESTAMP'].blank? ? false : (ENV['PERSERVE_TIMESTAMP'].to_s.downcase == "true")
+      preserve_timestamp = ENV['PRESERVE_TIMESTAMPS'].blank? ? false : (ENV['PRESERVE_TIMESTAMPS'].to_s.downcase == "true")
+      #refresh will replace migrations from engines
+      refresh = ENV['REFRESH'].blank? ? false : (ENV['REFRESH'].to_s.downcase == "true")
       railties = ActiveSupport::OrderedHash.new
       Rails.application.railties.all do |railtie|
         next unless to_load == :all || to_load.include?(railtie.railtie_name)
@@ -59,7 +61,11 @@ namespace :railties do
         puts "Copied data_migration #{migration[:name]} from #{name}"
       end
 
-      RussellEdge::DataMigrator.copy(RussellEdge::DataMigrator.migrations_path, railties, :on_skip => on_skip, :on_copy => on_copy, :perserve_timestamp => perserve_timestamp)
+      RussellEdge::DataMigrator.copy(RussellEdge::DataMigrator.migrations_path, railties, 
+                                     :on_skip => on_skip, 
+                                     :on_copy => on_copy, 
+                                     :preserve_timestamp => preserve_timestamp,
+                                     :refresh => refresh)
     end #data_migrations
     
   end #install
