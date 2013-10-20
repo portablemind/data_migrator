@@ -4,6 +4,9 @@ namespace :db do
     passed_version = ENV["VERSION"] ? ENV["VERSION"].to_i : nil
 
     RussellEdge::DataMigrator.new.migrate(nil, passed_version)
+
+    Rake::Task["db:schema:dump"].reenable
+    Rake::Task["db:schema:dump"].invoke
   end#end migrate_data task
     
   namespace :migrate_data do
@@ -24,6 +27,9 @@ namespace :db do
       raise "VERSION is required" unless passed_version
 
       RussellEdge::DataMigrator.new.run_up(passed_version)
+
+      Rake::Task["db:schema:dump"].reenable
+      Rake::Task["db:schema:dump"].invoke
     end#end up task
       
     task :down => :environment do
@@ -31,6 +37,9 @@ namespace :db do
       raise "VERSION is required" unless passed_version
 
       RussellEdge::DataMigrator.new.run_down(passed_version)
+
+      Rake::Task["db:schema:dump"].reenable
+      Rake::Task["db:schema:dump"].invoke
     end#end down task
   end#end namespace
 end
