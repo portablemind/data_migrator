@@ -266,7 +266,7 @@ module RussellEdge
       paths = file.split('/')
       filename = paths[paths.length - 1]
       version = filename.split('_')[0]
-      klass_name = filename.gsub(/#{version}/, "").gsub(/.rb/, "")[1..filename.length]
+      klass_name = filename.gsub(/#{version}/, "").gsub(/\.rb/, "")[1..filename.length]
       klass_name = klass_name.split('.')[0] if klass_name.split('.').length > 1 #check for scope of engine name
 
       return filename, version.to_i, klass_name
