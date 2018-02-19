@@ -14,5 +14,5 @@ Gem::Specification.new do |s|
   s.files = Dir["{db,lib,tasks}/**/*"] + ["MIT-LICENSE", "README.rdoc"]
   s.test_files = Dir["test/**/*"]
   s.version = DataMigrator::VERSION::STRING
-  s.add_runtime_dependency 'rails', '~> 3.2.0'
+  s.add_runtime_dependency 'rails', '<= 5.1.4'
 end
