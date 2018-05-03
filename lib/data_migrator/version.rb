@@ -1,8 +1,8 @@
 module DataMigrator
   module VERSION #:nodoc:
-    MAJOR = 2
+    MAJOR = 3
     MINOR = 0
-    TINY  = 2
+    TINY  = 0
 
     STRING = [MAJOR, MINOR, TINY].compact.join('.')
   end
