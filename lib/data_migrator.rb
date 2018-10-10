@@ -1,10 +1,10 @@
 require "benchmark"
-require 'extensions/railties/engine'
-require 'extensions/railties/engine/configuration'
+require "extensions/railties/engine"
+require "extensions/railties/engine/configuration"
 
 class DataMigrationTask < Rails::Railtie
   rake_tasks do
-    Dir[File.join(File.dirname(__FILE__), 'tasks/*.rake')].each { |f| load f }
+    Dir[File.join(File.dirname(__FILE__), "tasks/*.rake")].each { |f| load f }
   end
 end
 
@@ -18,7 +18,7 @@ module RussellEdge
       end
 
       def migrations(path)
-        files = Dir["#{path}/**/[0-9]*_*.rb" ]
+        files = Dir["#{path}/**/[0-9]*_*.rb"]
 
         seen = Hash.new false
 
@@ -37,7 +37,7 @@ module RussellEdge
           {:name => name, :filename => file, :version => version, :scope => scope}
         end
 
-        migrations.sort_by{|h| h[:version]}
+        migrations.sort_by { |h| h[:version] }
       end
 
       def next_migration_number(number)
@@ -46,7 +46,7 @@ module RussellEdge
 
       def initialize_data_migrations_table
         puts "** data_migrations table missing creating now...."
-        puts ActiveRecord::Migrator.run(:up, File.join(File.dirname(__FILE__), '../db/migrate/'), 20100819181805)
+        puts ActiveRecord::Migrator.run(:up, File.join(File.dirname(__FILE__), "../db/migrate/"), 20100819181805)
         puts "** done"
       end
 
@@ -64,7 +64,7 @@ module RussellEdge
 
             if duplicate = destination_migrations.detect { |m| m[:name] == migration[:name] }
               if options[:refresh] && duplicate[:scope] == scope.to_s
-                Dir.glob(File.join(destination,"*_#{migration[:name].underscore}.#{scope.to_s}.rb")).each { |f| puts "Removing old migration #{migration[:name]}"; File.delete(f) }
+                Dir.glob(File.join(destination, "*_#{migration[:name].underscore}.#{scope.to_s}.rb")).each { |f| puts "Removing old migration #{migration[:name]}"; File.delete(f) }
               elsif options[:on_skip] && duplicate[:scope] != scope.to_s
                 options[:on_skip].call(scope, migration)
               end
@@ -85,14 +85,13 @@ module RussellEdge
 
         copied
       end
-
     end
 
-    def initialize(migrations_path=nil)
+    def initialize(migrations_path = nil)
       @default_migrations_path = migrations_path || "#{Rails.root}/db/data_migrations"
     end
 
-    def migrate(passed_location=nil, passed_version=nil)
+    def migrate(passed_location = nil, passed_version = nil)
       setup
 
       location = passed_location.nil? ? @default_migrations_path : passed_location
@@ -121,11 +120,25 @@ module RussellEdge
     def get_current_version
       result = ActiveRecord::Base.connection.select_all("select max(version) as current_version from data_migrations")
 
-      current_version = result[0]['current_version'] unless result == -1
+      current_version = result[0]["current_version"] unless result == -1
 
       current_version = current_version.to_i unless current_version.nil?
 
       current_version
+    end
+
+    def run_up_without_migration
+      versions = []
+      files = get_all_files
+      files.each do |file|
+        filename, version, klass_name = separate_file_parts(file)
+        unless version_has_been_migrated?(version)
+          insert_migration_version(version)
+          versions << version
+        end
+      end
+
+      versions
     end
 
     def run_up(passed_version)
@@ -145,7 +158,6 @@ module RussellEdge
       end
 
       puts "** Version #{passed_version} not found" unless found
-
     end
 
     def run_down(passed_version)
@@ -165,7 +177,6 @@ module RussellEdge
       end
 
       puts "** Version #{passed_version} not found" unless found
-
     end
 
     private
@@ -176,7 +187,7 @@ module RussellEdge
       unless File.directory? @default_migrations_path
         FileUtils.mkdir_p(@default_migrations_path)
         #create ignore folder
-        FileUtils.mkdir_p(File.join(@default_migrations_path, 'ignore/'))
+        FileUtils.mkdir_p(File.join(@default_migrations_path, "ignore/"))
       end
     end
 
@@ -191,7 +202,6 @@ module RussellEdge
           end
         end
       end
-
     end
 
     def run_all_non_migrated(passed_version)
@@ -216,7 +226,6 @@ module RussellEdge
           handle_action(file, klass_name, version, :down) if version_has_been_migrated?(version)
         end
       end
-
     end
 
     def handle_action(file, klass_name, version, action)
@@ -251,7 +260,7 @@ module RussellEdge
 
       db_result = ActiveRecord::Base.connection.select_all("select count(*) as num_rows from data_migrations where version = '#{version}'")
 
-      num_rows = db_result[0]['num_rows'] unless db_result == -1
+      num_rows = db_result[0]["num_rows"] unless db_result == -1
 
       result = false if (num_rows.nil? || num_rows.to_i == 0)
       result
@@ -259,15 +268,15 @@ module RussellEdge
 
     def data_migrations_table_exists?
       table_names = ActiveRecord::Base.connection.tables
-      table_names.include?('data_migrations')
+      table_names.include?("data_migrations")
     end
 
     def separate_file_parts(file)
-      paths = file.split('/')
+      paths = file.split("/")
       filename = paths[paths.length - 1]
-      version = filename.split('_')[0]
+      version = filename.split("_")[0]
       klass_name = filename.gsub(/#{version}/, "").gsub(/\.rb/, "")[1..filename.length]
-      klass_name = klass_name.split('.')[0] if klass_name.split('.').length > 1 #check for scope of engine name
+      klass_name = klass_name.split(".")[0] if klass_name.split(".").length > 1 #check for scope of engine name
 
       return filename, version.to_i, klass_name
     end
@@ -276,12 +285,10 @@ module RussellEdge
       files = []
 
       if File.directory? @default_migrations_path
-
         files_or_directories = Dir.entries(@default_migrations_path).map { |directory| directory }
 
         files_or_directories.delete_if { |name| name =~ REMOVE_FILES_REGEX } #remove any file leading with . or ..
-        files_or_directories.delete_if { |name| name == 'ignore' } #ignore the ignore folder
-
+        files_or_directories.delete_if { |name| name == "ignore" } #ignore the ignore folder
 
         files_or_directories.each do |file_or_directory|
           file_or_directory = @default_migrations_path + "/" + file_or_directory
@@ -299,7 +306,7 @@ module RussellEdge
         files_or_directories = Dir.entries(file_or_directory).map { |directory| directory }
 
         files_or_directories.delete_if { |name| name =~ REMOVE_FILES_REGEX } #remove any file leading with . or ..
-        files_or_directories.delete_if { |name| name == 'ignore' } #ignore the ignore folder
+        files_or_directories.delete_if { |name| name == "ignore" } #ignore the ignore folder
 
         files_or_directories.each do |_file_or_directory|
           _file_or_directory = file_or_directory + "/" + _file_or_directory

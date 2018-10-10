@@ -1,5 +1,5 @@
 namespace :db do
-  desc 'migrates data into database'
+  desc "migrates data into database"
   task :migrate_data => :environment do
     passed_version = ENV["VERSION"] ? ENV["VERSION"].to_i : nil
 
@@ -7,7 +7,7 @@ namespace :db do
 
     Rake::Task["db:schema:dump"].reenable
     Rake::Task["db:schema:dump"].invoke
-  end#end migrate_data task
+  end #end migrate_data task
 
   namespace :migrate_data do
     task :list_pending => :environment do
@@ -15,12 +15,12 @@ namespace :db do
       puts "================Pending Data Migrations=========="
       puts pending_migrations
       puts "================================================="
-    end#end list_pending task
+    end #end list_pending task
 
     task :version => :environment do
       version = RussellEdge::DataMigrator.new.get_current_version
       puts (version.nil?) ? "** No migrations ran" : "** Current version #{version}"
-    end#end version task
+    end #end version task
 
     task :up => :environment do
       passed_version = ENV["VERSION"] ? ENV["VERSION"].to_i : nil
@@ -30,7 +30,7 @@ namespace :db do
 
       Rake::Task["db:schema:dump"].reenable
       Rake::Task["db:schema:dump"].invoke
-    end#end up task
+    end #end up task
 
     task :down => :environment do
       passed_version = ENV["VERSION"] ? ENV["VERSION"].to_i : nil
@@ -40,24 +40,31 @@ namespace :db do
 
       Rake::Task["db:schema:dump"].reenable
       Rake::Task["db:schema:dump"].invoke
-    end#end down task
-  end#end namespace
+    end #end down task
+
+    task :up_without_running => :environment do
+      versions = RussellEdge::DataMigrator.new.run_up_without_migration
+      puts "================Up Without Running  Data Migrations=========="
+      puts versions
+      puts "================================================="
+    end #up without running
+  end #end namespace
 end
 
 namespace :railties do
   namespace :install do
     # desc "Copies missing data_migrations from Railties (e.g. plugins, engines). You can specify Railties to use with FROM=railtie1,railtie2"
     task :data_migrations => :environment do
-      to_load = ENV['FROM'].blank? ? :all : ENV['FROM'].split(",").map {|n| n.strip }
+      to_load = ENV["FROM"].blank? ? :all : ENV["FROM"].split(",").map { |n| n.strip }
       #added to allow developer to perserve timestamps
-      preserve_timestamp = ENV['PRESERVE_TIMESTAMPS'].blank? ? false : (ENV['PRESERVE_TIMESTAMPS'].to_s.downcase == "true")
+      preserve_timestamp = ENV["PRESERVE_TIMESTAMPS"].blank? ? false : (ENV["PRESERVE_TIMESTAMPS"].to_s.downcase == "true")
       #refresh will replace migrations from engines
-      refresh = ENV['REFRESH'].blank? ? false : (ENV['REFRESH'].to_s.downcase == "true")
+      refresh = ENV["REFRESH"].blank? ? false : (ENV["REFRESH"].to_s.downcase == "true")
       railties = ActiveSupport::OrderedHash.new
       Rails.application.railties.each do |railtie|
         next unless to_load == :all || to_load.include?(railtie.railtie_name)
 
-        if railtie.respond_to?(:paths) && (path = railtie.paths['db/data_migrations'].first)
+        if railtie.respond_to?(:paths) && (path = railtie.paths["db/data_migrations"].first)
           railties[railtie.railtie_name] = path
         end
       end
@@ -76,6 +83,5 @@ namespace :railties do
                                      :preserve_timestamp => preserve_timestamp,
                                      :refresh => refresh)
     end #data_migrations
-
   end #install
 end #railties
