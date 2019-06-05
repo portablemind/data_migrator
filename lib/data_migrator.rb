@@ -9,6 +9,18 @@ class DataMigrationTask < Rails::Railtie
 end
 
 module RussellEdge
+  class DataMigratorEngine < ::Rails::Engine
+    isolate_namespace DataMigratorEngine
+
+    initializer :append_migrations do |app|
+      unless app.root.to_s.match root.to_s
+        config.paths["db/migrate"].expanded.each do |expanded_path|
+          app.config.paths["db/migrate"] << expanded_path
+        end
+      end
+    end
+  end
+
   class DataMigrator
     REMOVE_FILES_REGEX = /^\./
 
@@ -42,12 +54,6 @@ module RussellEdge
 
       def next_migration_number(number)
         [Time.now.utc.strftime("%Y%m%d%H%M%S"), "%.14d" % number].max
-      end
-
-      def initialize_data_migrations_table
-        puts "** data_migrations table missing creating now...."
-        puts ActiveRecord::Migrator.run(:up, File.join(File.dirname(__FILE__), "../db/migrate/"), 20100819181805)
-        puts "** done"
       end
 
       def copy(destination, sources, options = {})
@@ -182,7 +188,7 @@ module RussellEdge
     private
 
     def setup
-      RussellEdge::DataMigrator.initialize_data_migrations_table unless data_migrations_table_exists?
+      raise "Data Migration table missing" unless data_migrations_table_exists?
 
       unless File.directory? @default_migrations_path
         FileUtils.mkdir_p(@default_migrations_path)
